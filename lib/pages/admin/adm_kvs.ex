@@ -62,7 +62,9 @@ defmodule ADM.KVS do
         )
       end)
 
-  def event(_), do: []
+  def event(x) do
+    IO.inspect(x)
+  end
 
   def ram(os), do: :nitro.compact(os)
 end

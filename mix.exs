@@ -4,10 +4,9 @@ defmodule EXO.Mixfile do
   def project() do
     [
       app: :exosculat,
-      version: "0.11.3",
-      description: "EXO Exosculat Application",
+      version: "4.5.6",
+      description: "EXO Exosculat Exoskeleton",
       package: package(),
-      elixir: "~> 1.11",
       deps: deps()
     ]
   end
@@ -21,8 +20,10 @@ defmodule EXO.Mixfile do
   end
 
   def application(),
-    do: [mod: {EXOSCULAT, []},
-         extra_applications: [:rocksdb,:mnesia,:syn,:bpe,:nitro,:form,:n2o]]
+    do: [
+      mod: {EXOSCULAT, []},
+      extra_applications: [:rocksdb, :mnesia, :syn, :bpe, :nitro, :form, :n2o]
+    ]
 
   def deps() do
     [
@@ -31,6 +32,7 @@ defmodule EXO.Mixfile do
       {:bandit, "~> 1.0"},
       {:websock_adapter, "~> 0.5"},
       {:rocksdb, "~> 2.6.2", override: true},
+      # Transitional Erlang-Elixir Tier Stack
       {:form, "~> 11.4.15"},
       {:bpe, "~> 8.12.3"},
       {:nitro, "~> 11.4.16"},

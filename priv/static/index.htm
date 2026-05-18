@@ -1,0 +1,541 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="" />
+    <meta name="author" content="Maxim Sokhatsky" />
+    <title>2022-11-01 Structure of Web Frameworks</title>
+    <link rel="stylesheet" href="css/blank.css" />
+    <link rel="stylesheet" href="css/forms.css" />
+</head>
+<body>
+<nav>
+    <a href='index.htm'>INDEX</a>
+    <a href='login.htm'>LOGIN</a>
+</nav>
+<main>
+    <section>
+        <h3>EXO: Client Creation Page</h3>
+
+        <p>TL;DR How to write your first website and your first page using the N2O web framework</p>
+
+        <figure>
+            <img src="img/users.png" alt="Users Page Screenshot">
+            <figcaption>Picture 1. Client Creation Page.</figcaption>
+        </figure>
+
+        <p>This article shows the general structure of all web frameworks and, using the N2O framework as an example, demonstrates how to create active pages and websites on the Erlang/OTP platform and the Elixir programming language. The billing system of consumer pricing EXO (for Elixir) or client-bank FIN (a similar example for Erlang) is taken as an example and extended with a system users page.</p>
+
+        <p>The <a href="https://github.com/erpuno/exo">EXO</a> repository implements an idiomatic example &mdash; a billing system for telecom and electricity operators. Users in this system are of two types:
+           1) administrators, who define tariff models and create user accounts, and 
+           2) consumers, who order services according to tariff models.</p>
+
+        <figure>
+            <img src="img/tariffs.png" alt="Tariffs Model">
+            <figcaption>Picture 2. Tariffs Model.</figcaption>
+        </figure>
+
+        <p>In the existing template application, we will create:
+           1) a static HTML container (file domains.htm);
+           2) a user model #client{} (file client.hrl);
+           3) two forms: for user input and its tabular display (Client.Form and Client.Row modules);
+           4) a page controller that responds to buttons and performs initial page initialization (EXO.Domains module).
+           And we will connect all this into the existing application template (folders config, include, lib, priv/static).</p>
+
+        <h3>General Structure of Web Frameworks</h3>
+
+        <p>Web frameworks can be roughly divided into two large classes:
+           1) client-side frameworks, which build the page entirely on the client, transmitting only data and business objects over channels;
+           2) server-side frameworks, which build the page or parts of the page on the server and transmit already rendered forms over communication channels.
+        The NITRO web framework belongs to the second class.</p>
+
+        <p>Regardless of framework classes, they all share a common stack or architectural levels corresponding to ISO 42010:
+           1) data level,
+           2) logic level,
+           3) presentation level,
+           4) validation level. Conceptually, these levels are reduced to two: front-end and back-end.</p>
+
+        <p><b>Design (front-end)</b></p>
+
+        <p>— General page styles (BLANK.CSS)<br>
+           — Field and form styles (FORM.CSS)<br>
+           — Menu and admin page styles (ADMIN.CSS)</p>
+
+        <p><b>Web Stack (front-end)</b></p>
+
+        <p>— Static and dynamic router (N2O)<br>
+           — URL parameter parser (N2O)<br>
+           — Session layer (server and client contexts) N2O<br>
+           — Controller layer (NITRO web page logic)<br>
+           — Presentation layer (NITRO HTML elements language)<br>
+           — Business objects representation layer (X-FORMS language)<br>
+        </p>
+
+        <p><b>Storage and Business Logic (back-end)</b></p>
+
+        <p>
+           — Data model layer (KVS, MNESIA, SQL, Erlang HRL files)<br>
+           — Business process layer (BPE)<br>
+           — Access control layer (ABAC)<br>
+        </p>
+
+        <p>For each architectural level, the N2O.DEV model offers its own library. For the data schema level, the KVS library is used, which abstracts over relational databases (MNESIA, SQL) and key-value databases (RocksDB, Riak, Cassandra). For the presentation layer (or UI model), the NITRO library is used, which implements HTML5 semantics and offers its own way of defining new control elements. For field-level data validation and automatic form generation, the FORM library is used. All network connections and messages in the system are managed by the N2O library. For business logic, the BPE library is used, which implements the BPMN ISO 19510 standard. For access control, the ABAC library is used, which implements the NIST standard for access control.</p>
+
+        <figure>
+            <img src="img/n2o.png" alt="N2O Stack">
+            <figcaption>Picture 3. N2O Stack Architecture.</figcaption>
+        </figure>
+
+        <p>NOTE: The access control layer is not used in this EXO example.
+           The business logic layer is used only in the BPE Admin.</p>
+
+        <figure>
+            <img src="img/processes.png" alt="BPE Business Processes">
+            <figcaption>Picture 4. BPE Business Processes.</figcaption>
+        </figure>
+        <figure>
+            <img src="img/process-instance.png" alt="BPE Process Instance Flow">
+            <figcaption>Picture 5. BPE Process Instance Flow.</figcaption>
+        </figure>
+
+        <p>The design layer is used but not explained;
+           for a detailed review of the CSS model, see the
+           <a href="https://n2o.dev/articles/css.htm">style documentation page</a>.</p>
+
+        <h3>Creating a Users Page in the EXO Example</h3>
+
+        <h4>1. Creating a Static HTML Container</h4>
+
+        <p>Each page of the NITRO/N2O web framework contains a standard prelude that includes CSS stylesheets and the JavaScript portion of the N2O/NITRO/FORM libraries. Usually, this part is shared among all pages.</p>
+
+        <figure><code>
+&lt;!DOCTYPE html>
+&lt;html>
+&lt;head>
+    &lt;meta charset="utf-8" />
+    &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    &lt;meta name="description" content="" />
+    &lt;title>LOGIN&lt;/title>
+    &lt;link rel="stylesheet" href="css/blank.css" />
+    &lt;link rel="stylesheet" href="css/forms.css" />
+    &lt;link rel="stylesheet" href="css/admin.css" />
+&lt;/head>
+&lt;body>
+    &lt;nav>&lt;a href='login.htm'>LOGIN&lt;/a>&lt;/nav>
+    &lt;aside>&lt;/aside>
+    &lt;main>&lt;/main>
+    &lt;script src='https://ws.n2o.dev/priv/utf8.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/bert.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/heart.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/ieee754.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/n2o.js'>&lt;/script>
+    &lt;script src='https://ws.n2o.dev/priv/ftp.js'>&lt;/script>
+    &lt;script src='https://nitro.n2o.dev/priv/js/nitro.js'>&lt;/script>
+    &lt;script>host = location.hostname; port = 8051;&lt;/script>
+    &lt;script>protos = [$bert]; N2O_start();&lt;/script>
+&lt;/body>
+&lt;/html>
+</code></figure>
+
+        <p>Such pages are called static resources that can be served by a static HTTP server or via CDN. Once the page is loaded, it runs the N2O_start function, which creates a WebSocket connection and communicates with the server (back-end) according to the N2O/NITRO protocol, under which the client (web browser) executes server commands that modify the page (add, change, or remove DOM elements).</p>
+
+        <p>At this stage, unique DOM element names (highlighted in red) are designed on the static HTML page, which will later be used in the page controller logic for their modification.</p>
+
+        <figure><code>
+&lt;main>
+  &lt;article>
+    &lt;section>
+	&lt;h2>USERS&lt;/h2>
+        &lt;p>Add users to the system.&lt;/p>
+        &lt;br>
+        &lt;div id=<font color=red>ctrl</font>&lt;/div>
+        &lt;div id=<font color=red>frms</font>&lt;/div>
+        &lt;br>
+    &lt;/section>
+        &lt;div class="table">
+	    &lt;div id=<font color=red>tableHead</font> class="trGroup"> &lt;/div>
+            &lt;div id=<font color=red>tableRow</font>  class="trGroup"> &lt;/div>
+        &lt;/div>
+    &lt;br>
+  &lt;/article>
+&lt;/main>
+</code></figure>
+
+        <p>Here we place one div panel for the button that will open the client input form `ctrl`, one div panel for the input form itself (`frms`), and two panels for the header and body of the clients table (`tableHead`, `tableRow`).</p>
+
+        <h4>2. Connecting the Page Controller to the Router</h4>
+
+        <p>The main task of any web framework's router is to determine the page controller that will handle the request for a given URL address. The router is defined at the N2O library level and must contain two mandatory functions, `init` and `finish`, which are called on every URL access in the browser. The task of the `init` function is to put the module name, determined from the URL request `path` using the `route` function, into the N2O context (the `N2O.cx` object). Note that requests can be made both via HTTP and WebSocket protocols (which come with the `/ws` prefix), so we additionally check for this in the `url` function.</p>
+
+        <figure><code>
+defmodule <font color=red>EXO.Route</font> do
+  require N2O
+  require Logger
+
+  def finish(state, ctx), do: {:ok, state, ctx}
+  def init(state, context) do
+      %{path: path} = N2O.cx(context, :req)
+      {:ok, state, N2O.cx(context, path: path, module: url(path))}
+  end
+
+  def url(<<"/ws/",p::binary>>), do: route(p)
+  def url(<<"/",   p::binary>>), do: route(p)
+  def url(p),                    do: route(p)
+
+  def route(<<"app/backoffice/domains", _::binary>>), do: <font color=red>EXO.Domains</font>
+  def route(<<"app/login",              _::binary>>), do: EXO.Login
+  def route(""),                                      do: EXO.Login
+  def route(_) ,                                      do: EXO.Login
+
+end
+</code></figure>
+
+        <h4>3. Creating the Page Controller</h4>
+
+        <p>Now we need to create a controller named `EXO.Domains` which must contain only one mandatory function, `event`, whose parameter is the message received from the web page.</p>
+
+        <figure><code>
+defmodule <font color=red>EXO.Domains</font> do
+  require EXO
+  require BPE
+  require NITRO
+
+  def event(<font color=red>:init</font>), do: []
+  def event(<font color=red>:create</font>), do: []
+  def event(<font color=red>{:"CreateClient", _}</font>), do: []
+  def event(<font color=red>{:"Close",[]}</font>), do: []
+  def event(_), do: :ok
+end
+</code></figure>
+
+        <p>Here we design three additional protocol messages:
+           1) `:create` &mdash; postback for the "New" button located in the `ctrl` panel;
+           2) `{:\"CreateClient\", _}` &mdash; postback for the "Create" button on the form inside the `frms` panel;
+           3) `{:\"Close\", []}` &mdash; postback for the "Cancel" button on the form inside the `frms` panel.</p>
+
+        <p>We also decide that when clicking the "New" button, we hide the `ctrl` panel and show the form already built in the `frms` panel during page initialization (the `:init` message), which was hidden before clicking "New". After clicking "Create" or "Cancel", we hide the `frms` form and show the "New" button on the `ctrl` panel again.</p>
+
+        <h4>4. Creating Business Objects and Initializing the Schema</h4>
+
+        <p>Before creating forms, we need to define the model of the object that will be displayed on the form. N2O.DEV and ERP.UNO use Erlang `.hrl` files to define type information for business object fields. This allows the models to be used for both Erlang and Elixir projects. Furthermore, having business models in the `.hrl` format allows direct data storage in Mnesia, Erlang/OTP's native storage.</p>
+
+        <figure>
+            <img src="img/mnesia.png" alt="Mnesia Database">
+            <figcaption>Picture 6. Mnesia Database Storage.</figcaption>
+        </figure>
+        <figure>
+            <img src="img/kvs.png" alt="KVS Schema">
+            <figcaption>Picture 7. KVS Schema Database.</figcaption>
+        </figure>
+
+        <p>For a detailed specification of the language syntax that can be used inside `.hrl` files, see the official Erlang documentation, <a href="https://www.erlang.org/doc/reference_manual/typespec.html">TypeSpec</a> section.</p>
+
+        <figure><code>-ifndef(CLIENT_HRL).
+-define(CLIENT_HRL, "client_hrl").
+
+-record(<font color=red>client</font>, {
+        <font color=red>id</font> = kvs:seq([],[]),
+        next = [],prev = [],
+        bank = [],
+        iban = [],
+        local = [],
+        <font color=red>type</font> = consumer,
+        status = online,
+        <font color=red>program</font> = [],
+        amount = [],
+        default_account,
+        accounts = "/exo/:bank/:id/accounts",
+        default_card = [],
+        cards = "/exo/:bank/:id/cards",
+        <font color=red>phone</font> = <<>>,
+        tax = [],
+        <font color=red>names</font> = <<>>,
+        <font color=red>surnames</font> = <<>>,
+        date = [],
+        display_name = [],
+        registration = [] }).
+
+-endif.</code></figure>
+
+        <p>After defining the business object, it must be added to the global metainformation schema, which is shared by libraries like KVS and FORM. For this, we create a `schema.ex` file where we list (`@schema`) all `.hrl` files in the `include` directory for which tables will be initialized. This happens during compilation, and Erlang records are imported into Elixir automatically using the `Record.extract_all` macro, which accesses the filesystem at compile time. This macro is called for each file in the `include` directory. The mandatory `metainfo` function will be called on every startup and contains the `KVS.table` metainformation for all tables listed in `@schema`.</p>
+
+        <figure><code>defmodule <font color=red>EXO</font> do
+defmodule <font color=red>EXO</font>
+  require KVS
+  require FORM
+  require Record
+
+  @schema [ :account, <font color=red>:client</font>, :card,
+            :transaction, :currency, :phone, :field, :program ]
+
+  def metainfo(), do: KVS.schema( name: :exo, tables: exo())
+  def exo(), do: :lists.map(fn x -> table(x) end, @schema)
+
+  def table(name) do
+      exo_fields = :application.get_env(:exosculat, :exo_fields, [])
+      {a,b} = :lists.unzip(:proplists.get_value(name, exo_fields, []))
+      KVS.table(name: name, fields: a, instance: b)
+  end
+end
+</code></figure>
+
+        <p>Usually, you do not change the logic of `schema.ex`, but only modify the list of `.hrl` files in `@schema`. Here we show that we added the name of our business object as the `:client` atom to this list.</p>
+
+        <figure><code>
+$ mix clean
+$ iex -S mix
+> require EXO
+> EXO.client()
+</code></figure>
+
+         <p>For testing hypotheses and inspecting functions, it is convenient to use the Erlang console (IEx). You can write short Elixir expressions there without fully defining modules. For example, to see how the business object looks in the console, you need to run `require EXO`, after which you can call the module functions that return instances of business objects.</p>
+
+        <h4>5. Creating the Input Form, Configuring Postback and Sources</h4>
+
+        <p>A form is a visual representation of a business object, of which there can be several: for inputting information, editing, searching, read-only viewing, and rendering as a row for tabular display. The full list of form types according to the FORM library is: `none`, `create`, `edit`, `search`, `view`.</p>
+
+        <p>Every web framework implementing the X-FORMS specification must include a form metainformation specification required for rendering. For example: whether the field is enabled or disabled, its default value, field width, field type, name, server-side module containing the logic, stream where dictionary values for this field are stored, etc.</p>
+
+        <p>The `FORM` model is defined in the `include` directory of the respective library and contains `FORM.document` (form), `FORM.but` (buttons), and `FORM.field` (fields). The form document itself, `FORM.document`, consists of four main parts: name, list of sections, list of buttons, and list of fields in sections.</p>
+
+        <figure>
+            <img src="img/forms.png" alt="Forms Structure">
+            <figcaption>Picture 8. Forms Structure Components.</figcaption>
+        </figure>
+
+        <p>When we want to make form elements, such as buttons or fields, active &mdash; meaning they transmit specific events (like `onclick`) to the server &mdash; we define a `postback` property for that element. This value will reach the previously defined page controller when the event occurs. When sending the `{:\"CreateClient\", _}` postback message to the server, all form field values currently present in the browser context listed in the `sources` field will also be transmitted. The names of `sources` have a three-component structure `X_Y_Z`, where `X` is the field name, `Y` is the business object name, and `Z` is the form type (`none`, `create`, `edit`, `search`, `view`). In this example, forms without modifiers (`none`) are used.</p>
+
+        <p>Note that the `id` properties of `FORM.field` elements must match the fields defined in the `EXO.client` business object; otherwise, the form renderer will not be able to find the type information. Each form must define three mandatory functions: 1) `doc`, which returns a simple string explaining in one sentence what the form is for; 2) `new`, which takes three parameters: the form name, the business object to visualize, and optional settings, and returns `FORM.document` with the description of all fields, buttons, and sections; 3) `id`, which returns the default reference business object.</p>
+
+
+        <figure><code>
+defmodule <font color=red>Client.Form</font> do
+  require EXO
+  require NITRO
+  require FORM
+  require BPE
+  def doc(), do: "System user input form"
+  def id, do: EXO.client()
+  def new([], _, _), do: []
+  def new(name, _client, _) do
+      :erlang.put(:type_client_none, :consumer)
+      FORM.document(
+        name: :form.atom([:client,name]),
+        sections: [
+            FORM.sec(name: ["Create user: " ])],
+        buttons: [
+            FORM.but(id: :decline,
+                     name: :decline,
+                     title: "Cancel",
+                     class: [:cancel],
+                     <font color=red>postback</font>: <font color=red>{:"Close",[]}</font> ),
+            FORM.but(id: :proceed,
+                     name: :proceed,
+                     title: "Create",
+                     class: [:button,:sgreen],
+                     <font color=red>sources</font>: [<font color=red>:surnames_client_none, :names_client_none,
+                               :phone_client_none, :type_client_none</font>],
+                     <font color=red>postback</font>: <font color=red>{:"CreateClient", :form.atom([:client,name])}</font>)],
+        fields: [
+            FORM.field(id: <font color=red>:surnames</font>,
+                     name: :surnames,
+                     type: :string,
+                     title: "Surnames:",
+                     labelClass: :label),
+            FORM.field(id: <font color=red>:names</font>,
+                     name: :names,
+                     type: :string,
+                     title: "Names",
+                     labelClass: :label),
+            FORM.field(id: <font color=red>:phone</font>,
+                     name: :phone,
+                     type: :string,
+                     title: "Phone",
+                     labelClass: :label),
+            FORM.field(
+                     id: <font color=red>:type</font>,
+                     name: :type,
+                     title: "Type:",
+                     type: :select,
+                     default: :consumer,
+                     options: [
+                         FORM.opt(name: :consumer, checked: true, title: "Consumer"),
+                         FORM.opt(name: :admin, title: "Administrator"),] ) ] )
+     end
+end
+</code></figure>
+
+        <h4>6. Creating a Tabular Form</h4>
+
+        <p>If a business object needs to be displayed quickly in a table, you can bypass `FORM` and directly create a view using HTML DSL, constructing elements using appropriate Erlang records. From the second parameter of the `new` function, which expects an `EXO.client`, we extract the fields `phone`, `names`, `surnames`, `type`, `status`, and `date`, and display them in a panel with 5 columns.</p>
+
+        <figure><code>
+def header() do
+    NITRO.panel(id: :header,
+                class: :th,
+                body: [ NITRO.panel(class: :column20, body: "Full Name"),
+                        NITRO.panel(class: :column20, body: "Type"),
+                        NITRO.panel(class: :column20, body: "Date"),
+                        NITRO.panel(class: :column20, body: "Phone"),
+                        NITRO.panel(class: :column10, body: "Status") ] )
+end
+</code></figure>
+
+        <p>See the table header as the `header` function in the page controller module `EXO.Domains`. Note that the classes for panels are identical for both the header columns and table rows.</p>
+
+        <figure><code>
+defmodule <font color=red>Client.Row</font> do
+  require EXO
+  require NITRO
+  def doc(), do: "Row form for displaying a system user."
+  def id(), do: EXO.client()
+  def new(name, client, _) do
+      phone = EXO.client(client, :phone)
+      names = EXO.client(client, :names)
+      surnames = EXO.client(client, :surnames)
+      type = EXO.client(client, :type)
+      status = EXO.client(client, :status)
+      date = EXO.client(client, :date)
+
+      NITRO.panel(id: :form.atom([:tr,name]), class: :td, body: [
+        NITRO.panel(class: :column20,
+            body: NITRO.link(href: "user.htm?p=" <> :nitro.to_binary(phone),
+                             body: names <> " " <> surnames)),
+        NITRO.panel(class: :column20,  body: :nitro.to_binary type),
+        NITRO.panel(class: :column20,  body: :nitro.compact date),
+        NITRO.panel(class: :column20,  body: :nitro.compact phone),
+        NITRO.panel(class: :column10,  body: :nitro.to_binary status)
+       ])
+  end
+end
+</code></figure>
+
+        <p>Usually, tabular forms do not contain active elements with `postback` and `sources`, like in this example.</p>
+
+        <figure>
+            <img src="img/user.png" alt="Single User Page">
+            <figcaption>Picture 9. Single User Detail View.</figcaption>
+        </figure>
+        <figure>
+            <img src="img/users.png" alt="Users List Page">
+            <figcaption>Picture 10. Users List Tabular View.</figcaption>
+        </figure>
+
+        <h4>7. Configuration Settings</h4>
+
+        <p>Once we have defined the container, controller, forms, and business object, we now need to integrate it all into our system using the `config.exs` configuration file. We place pages in the `priv/static` folder, configure the router in the `n2o.routes` setting, and add forms to the `form.registry` list. The schema module implementing the `metainfo` function is added to the data schema, the `kvs.schema` setting. Other variables are left as is.</p>
+
+        <figure><code>
+config :n2o,
+  pickler: :n2o_secret,
+  app: :exosculat,
+  mq: :n2o_syn,
+  port: 8051,
+  tables: [:cookies, :file, :caching, :async],
+  protocols: [:n2o_heart, :nitro_n2o, :n2o_ftp],
+  routes: <font color=red>EXO.Route</font>
+
+config :kvs,
+  dba: :kvs_rocks,
+  dba_st: :kvs_st,
+  schema: [:kvs, :kvs_stream, :bpe_metainfo, <font color=red>EXO</font>]
+
+config :form,
+  module: :form_backend,
+  registry: [<font color=red>Client.Row,Client.Form</font>]
+</code></figure>
+
+        <p>If there is a need to override configuration variables without restarting the server (when they are normally read), you can use the `application.set_env` function:</p>
+
+<figure><code>
+> :application.set_env :form, :registry, [Client.Row,Client.Form]
+> :application.get_env :form, :registry
+{:ok, [Client.Row, Client.Form]}
+</code></figure>
+
+        <h4>8. Page Controller init Protocol</h4>
+
+        <figure><code>
+def event(<font color=red>:init</font>) do
+  :nitro.clear(:tableHead)
+  :nitro.clear(:tableRow)
+  :nitro.insert_top(:tableHead, header())
+  :nitro.clear(:frms)
+  :nitro.clear(:ctrl)
+  mod = Client.Form
+  :nitro.insert_bottom(<font color=red>:frms</font>,
+      :form.new(mod.new(mod,mod.id(), []), mod.id(), []))
+  :nitro.insert_bottom(:ctrl,
+      NITRO.link(id: :creator,
+                 body: "New",
+                 postback: :create,
+                 class: [:button, :sgreen]))
+  :nitro.hide(<font color=red>:frms</font>)
+    :lists.map(fn x -> :nitro.insert_top(:tableRow,
+        Client.Row.new(:form.atom([:row, EXO.client(x, :id)]), x, [])) end,
+       :kvs.all('/exo/clients'))
+end
+</code></figure>
+
+        <h4>9. Button Handlers for Close and Create</h4>
+
+        <figure><code>
+def event(<font color=red>{:"Close",[]}</font>) do
+  :nitro.hide(:frms)
+  :nitro.show(:ctrl)
+end
+</code></figure>
+
+        <figure><code>
+def event(<font color=red>{:"CreateClient", _}</font>) do
+  date = :calendar.now_to_datetime :erlang.timestamp
+  type = :nitro.q(<font color=red>:type_client_none</font>)
+  names = :nitro.q(<font color=red>:names_client_none</font>)
+  phone = :nitro.q(<font color=red>:phone_client_none</font>)
+  surnames = :nitro.q(<font color=red>:surnames_client_none</font>)
+  id = :kvs.seq([],[])
+
+  client = EXO.client(id: id, phone: phone, names: names,
+                      surnames: surnames, status: :online,
+                      type: type, date: date)
+
+  nitro = :form.new(
+     Client.Row.new(
+        :form.atom([:row,id]), client, []), client, [])
+
+  :kvs.append client, '/exo/clients'
+  :nitro.insert_top(<font color=red>:tableRow</font>, nitro)
+  :nitro.hide(:frms)
+  :nitro.show(:ctrl)
+end
+</code></figure>
+
+        <figure>
+            <img src="img/processes.png" alt="BPE Business Processes">
+            <figcaption>Picture 4. BPE Business Processes.</figcaption>
+        </figure>
+        <figure>
+            <img src="img/process-instance.png" alt="BPE Process Instance Flow">
+            <figcaption>Picture 5. BPE Process Instance Flow.</figcaption>
+        </figure>
+
+        <h4>10. Direct Messages</h4>
+
+        <figure><code>
+> direct(tuple(atom('Close'),nil()))
+</code></figure>
+
+        <h4>11. Publishing the Application to the hex Package Manager</h4>
+
+        <figure><code>
+$ mix hex.publish
+</code></figure>
+
+
+    </section>
+</main>
+<footer>Namdak Tonpa <span class="heart">&nbsp;❤&nbsp;</span> 2009—2022</footer>
+</body>
+</html>

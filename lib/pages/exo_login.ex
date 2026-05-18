@@ -36,10 +36,10 @@ defmodule EXO.Login do
         end
 
       _ ->
-        :nitro.redirect("index.html")
+        :nitro.redirect("index.htm")
     end
   end
 
-  def event({:Close, _}), do: :nitro.redirect("index.html")
+  def event({:Close, _}), do: :nitro.redirect("index.htm")
   def event(_), do: :ok
 end

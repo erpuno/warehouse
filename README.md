@@ -20,6 +20,12 @@ $ git clone https://github.com/erpuno/exo
 $ cd exo
 $ mix deps.get
 $ iex -S mix
+> EXO.boot
+```
+
+In parallel, open:
+
+```
 $ open http://localhost:8004/app/login.htm
 ```
 

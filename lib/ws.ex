@@ -17,7 +17,7 @@ defmodule Sample.WS do
     }
 
     conn
-    |> WebSockAdapter.upgrade(Sample.WS, [module: extract(route_str), req: req], timeout: 6_000)
+    |> WebSockAdapter.upgrade(Sample.WS, [module: extract(route_str), req: req], timeout: 60_000)
     |> halt()
   end
 

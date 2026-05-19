@@ -34,8 +34,8 @@ defmodule EXO.Mixfile do
   def deps() do
     [
       {:ex_doc, ">= 0.0.0", only: :dev},
-      {:plug, "~> 1.15.3"},
-      {:bandit, "~> 1.0"},
+      {:plug, "~> 1.18"},
+      {:bandit, "~> 1.11"},
       {:websock_adapter, "~> 0.5"},
       {:rocksdb, "~> 2.6.2"},
       # Transitional Erlang-Elixir Tier Stack

@@ -137,217 +137,30 @@ defmodule EXO.Boot do
     end
   end
 
-  def itsm() do
-    current_services = :kvs.all(~c"/itsm/services")
-    has_bankruptcy = Enum.any?(current_services, fn s -> EXO.itsm_service(s, :id) == "bankruptcy" end)
-    has_gas_or_oil = Enum.any?(current_services, fn s -> EXO.itsm_service(s, :id) in ["gas", "oil"] end)
-    if current_services == [] or not has_bankruptcy or has_gas_or_oil do
-      if current_services != [] do
-        Enum.each(current_services, fn s -> :kvs.delete(~c"/itsm/services", EXO.itsm_service(s, :id)) end)
-        :kvs.delete(:writer, ~c"/itsm/services")
-      end
-
-      sample_services = [
-        EXO.itsm_service(id: "internet", name: "Інтернет", description: "Широкосмуговий доступ до мережі Інтернет", owner: "ІСС Мережі", status: :active),
-        EXO.itsm_service(id: "electricity", name: "Електропостачання", description: "Постачання електроенергії", owner: "Київські Енергомережі", status: :active),
-        EXO.itsm_service(
-          id: "bankruptcy",
-          name: "Інформаційно-довідкова система \"Банкрутство\"",
-          description: "Послуги з надання інформації про підприємства щодо яких порушено справу про банкрутство та стан проходження цих справ.",
-          owner: "ДП «Інформаційні судові системи»",
-          status: :active
-        ),
-        EXO.itsm_service(
-          id: "court_decisions_images",
-          name: "Сервіс систематизації образів судових рішень",
-          description: "Послуга з систематизації за обраними критеріями образів автоматично створених електронних копій судових рішень або інших документів, які містяться в Єдиному державному реєстрі судових рішень.",
-          owner: "ДП «Інформаційні судові системи»",
-          status: :active
-        ),
-        EXO.itsm_service(
-          id: "court_cases_scheduled",
-          name: "Сервіс систематизації переліку судових справ, призначених до розгляду",
-          description: "Послуга з отримання переліку судових справ, призначених до розгляду.",
-          owner: "ДП «Інформаційні судові системи»",
-          status: :active
-        ),
-        EXO.itsm_service(
-          id: "court_decisions_hyperlinks",
-          name: "Сервіс зі створення гіпертекстових посилань в текстах судових рішень",
-          description: "Мета послуги - підвищення інформативності документів, які містяться в Єдиному державному реєстрі судових рішень, за рахунок створення гіпертекстових посилань на первинні нормативні документи, згадувані в текстах рішень та розміщені в інформаційно-правових системах користувача.",
-          owner: "ДП «Інформаційні судові системи»",
-          status: :active
-        )
+  def wms() do
+    if :kvs.all(EXO.wms_weapon_model()) == [] do
+      models = [
+        EXO.wms_weapon_model(id: "ak74", weapon_type: "rifle", caliber: "5.45x39", country: "USSR", category: "assault", status: "active", manufacturer: "izhmash"),
+        EXO.wms_weapon_model(id: "m4a1", weapon_type: "rifle", caliber: "5.56x45", country: "USA", category: "assault", status: "active", manufacturer: "colt")
       ]
-      :lists.map(fn x -> :kvs.append(x, ~c"/itsm/services") end, sample_services)
-    end
+      :lists.map(fn x -> :kvs.append(x, ~c"/wms/weapon_models") end, models)
+      Logger.info("Seeded initial weapon models.")
 
-    if :kvs.all(~c"/itsm/slas") == [] do
-      ids = :lists.map(fn _ -> :timer.sleep(1) ; :kvs.seq([],[]) end, :lists.seq(1,2))
-      sample_slas = [
-        EXO.itsm_sla(id: :lists.nth(1, ids), service: "internet", priority: :low, response_time: 120, resolution_time: 480, status: :active),
-        EXO.itsm_sla(id: :lists.nth(2, ids), service: "electricity", priority: :critical, response_time: 15, resolution_time: 60, status: :active)
+      weapons = [
+        EXO.wms_weapon(id: "WPN-001", weapon_model: "ak74", serial_number: "AK-12345", owner: "A1234", status: "active", storage_location: "Kyiv"),
+        EXO.wms_weapon(id: "WPN-002", weapon_model: "m4a1", serial_number: "M4-98765", owner: "B5678", status: "repair", storage_location: "Lviv"),
+        EXO.wms_weapon(id: "WPN-003", weapon_model: "ak74", serial_number: "AK-11111", owner: "A1234", status: "destroyed", storage_location: "Kharkiv")
       ]
-      :lists.map(fn x -> :kvs.append(x, ~c"/itsm/slas") end, sample_slas)
-    end
+      :lists.map(fn x -> :kvs.append(x, ~c"/wms/weapons") end, weapons)
+      Logger.info("Seeded initial weapons.")
 
-    if :kvs.all(~c"/itsm/cis") == [] do
-      ids = :lists.map(fn _ -> :timer.sleep(1) ; :kvs.seq([],[]) end, :lists.seq(1,2))
-      sample_cis = [
-        EXO.itsm_ci(id: :lists.nth(1, ids), name: "Магістральний оптоволоконний кабель", type: :hardware, status: :active, dependencies: [], serial_number: "FIB-MAG-01", owner: "ІСС Мережі"),
-        EXO.itsm_ci(id: :lists.nth(2, ids), name: "Трансформаторна підстанція ТП-402", type: :hardware, status: :active, dependencies: [], serial_number: "SUB-EL-402", owner: "Київські Енергомережі")
+      orders = [
+        EXO.wms_service_order(id: "SO-101", weapon: "WPN-002", reason: "Заклинює затвор", service_status: "Init", result: "", received_by: "Tech1"),
+        EXO.wms_service_order(id: "SO-102", weapon: "WPN-003", reason: "Утилізація (знищено)", service_status: "Diagnostic", result: "Списання", received_by: "Tech2")
       ]
-      :lists.map(fn x -> :kvs.append(x, ~c"/itsm/cis") end, sample_cis)
+      :lists.map(fn x -> :kvs.append(x, ~c"/wms/service_orders") end, orders)
+      Logger.info("Seeded initial service orders.")
     end
-
-    # ── Step 1: ensure req exists and get its id ─────────────────────────────
-    req_id =
-      case :kvs.all(~c"/itsm/reqs") do
-        [] ->
-          :timer.sleep(1)
-          rid = :kvs.seq([], [])
-          date = :calendar.now_to_datetime(:erlang.timestamp())
-          req = EXO.itsm_req(
-            id: rid,
-            initiator: "3",
-            service: "internet",
-            title: "Проблеми зі зв'язком в офісі МВС",
-            description: "Не працює VPN-з'єднання з центральним сервером. Зачіпає 40 робочих місць.",
-            status: :in_progress,
-            created_at: date,
-            closed_at: []
-          )
-          :kvs.append(req, ~c"/itsm/reqs")
-
-          # BPE workflow for this req
-          case :bpe.start(BPE.Incident.def(), [req]) do
-            {:ok, proc_id} ->
-              :bpe.next(proc_id) # New -> Triaje
-              :bpe.next(proc_id) # Triaje -> Work
-              Logger.info("Seeded BPE incident workflow #{proc_id} in Work state for req #{rid}")
-            err ->
-              Logger.warning("Failed to start BPE workflow in boot: #{inspect(err)}")
-          end
-
-          rid
-
-        [existing | _] ->
-          EXO.itsm_req(existing, :id)
-      end
-
-    # ── Step 2: seed 6 incidents; first one links to req ─────────────────────
-    # Re-seed whenever count < 6 (wipe old first to avoid list corruption)
-    current_incidents = :kvs.all(~c"/itsm/incidents")
-    if length(current_incidents) < 6 do
-      Enum.each(current_incidents, fn i ->
-        :kvs.delete(~c"/itsm/incidents", EXO.itsm_incident(i, :id))
-      end)
-      if current_incidents != [] do
-        :kvs.delete(:writer, ~c"/itsm/incidents")
-      end
-
-      inc_ids = :lists.map(fn _ -> :timer.sleep(1); :kvs.seq([], []) end, :lists.seq(1, 6))
-
-      # NOTE: req_id goes directly into incident #1 — no post-hoc patching
-      sample_incidents = [
-        EXO.itsm_incident(
-          id: :lists.nth(1, inc_ids),
-          req: req_id,
-          service: "internet",
-          priority: :high,
-          status: :in_progress,
-          assignee: "Іваненко О.П.",
-          description: "Падіння швидкості та обриви зв'язку через аварію на магістральній лінії.",
-          resolution: "",
-          slm_deadline: []
-        ),
-        EXO.itsm_incident(
-          id: :lists.nth(2, inc_ids),
-          req: [],
-          service: "electricity",
-          priority: :critical,
-          status: :new,
-          assignee: "Петренко В.М.",
-          description: "Повне відключення живлення у серверній кімнаті корпусу А.",
-          resolution: "",
-          slm_deadline: []
-        ),
-        EXO.itsm_incident(
-          id: :lists.nth(3, inc_ids),
-          req: [],
-          service: "bankruptcy",
-          priority: :medium,
-          status: :accepted,
-          assignee: "Коваленко С.Г.",
-          description: "API повертає помилку 500 при запиті переліку справ за датою.",
-          resolution: "",
-          slm_deadline: []
-        ),
-        EXO.itsm_incident(
-          id: :lists.nth(4, inc_ids),
-          req: [],
-          service: "court_decisions_images",
-          priority: :low,
-          status: :resolved,
-          assignee: "Бойко Д.Р.",
-          description: "Затримка у формуванні образів рішень понад 2 хвилини.",
-          resolution: "Збільшено потужність черги обробки зображень. Затримки усунуто.",
-          slm_deadline: []
-        ),
-        EXO.itsm_incident(
-          id: :lists.nth(5, inc_ids),
-          req: [],
-          service: "court_cases_scheduled",
-          priority: :medium,
-          status: :escalated,
-          assignee: "Мороз Л.В.",
-          description: "Відсутні дані про призначені справи за 01.06.2026 у відповіді API.",
-          resolution: "",
-          slm_deadline: []
-        ),
-        EXO.itsm_incident(
-          id: :lists.nth(6, inc_ids),
-          req: [],
-          service: "court_decisions_hyperlinks",
-          priority: :high,
-          status: :in_progress,
-          assignee: "Лисенко А.Ю.",
-          description: "Гіперпосилання в рішеннях ЄДРСР ведуть на застарілі URL нормативних актів.",
-          resolution: "",
-          slm_deadline: []
-        )
-      ]
-      :lists.map(fn x -> :kvs.append(x, ~c"/itsm/incidents") end, sample_incidents)
-      Logger.info("Seeded #{length(sample_incidents)} incidents into /itsm/incidents")
-    end
-
-    # ── Step 3: seed change request ───────────────────────────────────────────
-    if :kvs.all(~c"/itsm/changes") == [] do
-      :timer.sleep(1)
-      chg_id = :kvs.seq([], [])
-      chg = EXO.itsm_change(
-        id: chg_id,
-        req: req_id,
-        service: "internet",
-        title: "Модернізація магістрального кабелю",
-        description: "Заміна пошкодженої ділянки оптоволокна для відновлення стабільного з'єднання.",
-        risk_level: :medium,
-        impact: :medium,
-        status: :in_progress,
-        change_manager: "Адміністратор",
-        backout_plan: "Переключення на резервний мідний кабель"
-      )
-      :kvs.append(chg, ~c"/itsm/changes")
-
-      case :bpe.start(BPE.Change.def(), [chg]) do
-        {:ok, chg_proc_id} ->
-          :bpe.next(chg_proc_id) # New -> Analyze
-          Logger.info("Seeded BPE change workflow #{chg_proc_id} in Analyze state for change #{chg_id}")
-        err ->
-          Logger.warning("Failed to start BPE Change workflow in boot: #{inspect(err)}")
-      end
-    end
-
     :ok
   end
 end

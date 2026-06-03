@@ -3,9 +3,9 @@ defmodule EXO.Mixfile do
 
   def project() do
     [
-      app: :exosculat,
+      app: :wms,
       version: "4.5.6",
-      description: "EXO Exosculat Exoskeleton",
+      description: "WMS Warehouse Management System",
       package: package(),
       overrides: [
       {:rocksdb,
@@ -21,7 +21,7 @@ defmodule EXO.Mixfile do
     [
       files: ~w(doc include priv mix.exs LICENSE CNAME README.md),
       licenses: ["ISC"],
-      links: %{"GitHub" => "https://github.com/erpuno/exo"}
+      links: %{"GitHub" => "https://github.com/erpuno/wms"}
     ]
   end
 

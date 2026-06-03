@@ -27,17 +27,21 @@ config :form,
     Program.Form,
     Program.Row,
     Account.Form,
-    ITSM.Service.Form,
-    ITSM.Service.Row,
-    ITSM.Incident.Form,
-    ITSM.Incident.Row,
-    ITSM.Change.Form,
-    ITSM.Change.Row,
-    ITSM.Ticket.Form
+    WMS.Weapon.Form,
+    WMS.Weapon.Row,
+    WMS.ServiceOrder.Form,
+    WMS.ServiceOrder.Row
   ]
 
 config :bpe,
-  procmodules: [:bpe, :bpe_account],
+  procmodules: [
+    :bpe,
+    :bpe_account,
+    WMS.BPE.ServiceOrder,
+    WMS.BPE.LogisticsOrder,
+    WMS.BPE.IncomeOrder,
+    WMS.BPE.TerminationOrder
+  ],
   logger_level: :info,
   logger: [
     {:handler, :synrc, :logger_std_h,

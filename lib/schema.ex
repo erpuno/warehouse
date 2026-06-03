@@ -14,12 +14,24 @@ defmodule EXO do
     :field,
     :program,
     :phone,
-    :itsm_service,
-    :itsm_req,
-    :itsm_incident,
-    :itsm_change,
-    :itsm_ci,
-    :itsm_sla
+    :wms_weapon_model,
+    :wms_weapon,
+    :wms_manufacturer,
+    :wms_owner,
+    :wms_license,
+    :wms_storage_location,
+    :wms_transfer,
+    :wms_weapon_event,
+    :wms_service_order,
+    :wms_service_event,
+    :wms_service_act,
+    :wms_part,
+    :wms_audit_event,
+    :wms_weapon_type,
+    :wms_caliber,
+    :wms_country,
+    :wms_category,
+    :wms_status
   ]
 
   Enum.each(
@@ -45,7 +57,7 @@ defmodule EXO do
       EXO.Boot.clients()
       EXO.Boot.programs()
       EXO.Boot.accounts()
-      EXO.Boot.itsm()
+      EXO.Boot.wms()
     rescue
       _ -> :skip
     end

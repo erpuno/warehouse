@@ -7,7 +7,24 @@ defmodule BPE.Create do
   def id(), do: BPE.process()
 
   def new(name, _, _) do
-    :erlang.put(:process_type_pi_none, "bpe_account")
+    procs = Application.get_env(:bpe, :procmodules, []) |> Enum.reject(&(&1 == :bpe))
+    default_proc = List.first(procs) || :bpe_account
+    
+    :erlang.put(:process_type_pi_none, to_string(default_proc))
+
+    options = Enum.map(procs, fn p ->
+      title_str = 
+        case p do
+          :bpe_account -> "Рахунок"
+          atom -> atom |> to_string() |> String.replace("Elixir.", "")
+        end
+        
+      FORM.opt(
+        name: p,
+        checked: p == default_proc,
+        title: title_str
+      )
+    end)
 
     FORM.document(
       name: :form.atom([:pi, name]),
@@ -34,15 +51,9 @@ defmodule BPE.Create do
           type: :select,
           title: "Тип:",
           tooltips: [],
-          default: :bpe_account,
+          default: default_proc,
           postback: {:TypeProcess, :form.atom([:pi, name])},
-          options: [
-            FORM.opt(
-              name: :bpe_account,
-              checked: true,
-              title: "Рахунок"
-            )
-          ]
+          options: options
         )
       ]
     )

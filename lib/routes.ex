@@ -24,22 +24,17 @@ defmodule EXO.Route do
 
   # Backoffice
 
-  def route(<<"app/backoffice/reports", _::binary>>), do: EXO.Login
-  def route(<<"app/backoffice/tariffs", _::binary>>), do: EXO.Tariffs
-  def route(<<"app/backoffice/domains", _::binary>>), do: EXO.Domains
-  def route(<<"app/backoffice/itsm_services", _::binary>>), do: EXO.ITSM.Services
-  def route(<<"app/backoffice/itsm_incidents", _::binary>>), do: EXO.ITSM.Incidents
-  def route(<<"app/backoffice/itsm_changes", _::binary>>), do: EXO.ITSM.Changes
-  def route(<<"app/backoffice/console", _::binary>>), do: EXO.ITSM.Console
-  def route(<<"app/backoffice/profile", _::binary>>), do: EXO.User
-  def route(<<"app/backoffice/user", _::binary>>), do: EXO.User
+  def route(<<"app/backoffice/wms_weapons", _::binary>>), do: EXO.WMS.Weapons
+  def route(<<"app/wms/console", _::binary>>), do: EXO.WMS.Console
 
-  # Consumer
+  # WMS Portals
 
-  def route(<<"app/consumer/profile", _::binary>>), do: EXO.Login
-  def route(<<"app/consumer/consume", _::binary>>), do: EXO.Login
-  def route(<<"app/consumer/service", _::binary>>), do: EXO.Service
-  def route(<<"app/consumer/portal", _::binary>>), do: EXO.ITSM.Portal
+  def route(<<"app/wms/operator/weapons", _::binary>>), do: EXO.WMS.Weapons
+  def route(<<"app/wms/repair/orders", _::binary>>), do: EXO.WMS.Services
+  def route(<<"app/wms/logistics/transfers", _::binary>>), do: EXO.WMS.Weapons # fallback for now
+  def route(<<"app/wms/operator", _::binary>>), do: EXO.WMS.Operator
+  def route(<<"app/wms/repair", _::binary>>), do: EXO.WMS.Repair
+  def route(<<"app/wms/logistics", _::binary>>), do: EXO.WMS.Logistics
 
   # Login
 

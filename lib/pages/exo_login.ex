@@ -25,18 +25,12 @@ defmodule EXO.Login do
 
   def event({:Next, _}) do
     phone = :nitro.q(:number_phone_none)
-    clients = :kvs.all(~c"/exo/clients")
-    res = findByPhone(phone, clients)
-
-    case res do
-      [x] ->
-        case :nitro.to_binary(EXO.client(x, :type)) do
-          "admin" -> :nitro.redirect("backoffice/domains.htm")
-          "consumer" -> :nitro.redirect("consumer/service.htm")
-        end
-
-      _ ->
-        :nitro.redirect("index.htm")
+    case phone do
+      "1" -> :nitro.redirect("wms/operator.htm")
+      "2" -> :nitro.redirect("wms/repair.htm")
+      "3" -> :nitro.redirect("wms/logistics.htm")
+      "4" -> :nitro.redirect("wms/console.htm")
+      _ -> :nitro.redirect("wms/operator.htm")
     end
   end
 
